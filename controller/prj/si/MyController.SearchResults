@@ -1,5 +1,0 @@
----- USE_STDPERIPH_DRIVER Matches (4 in 1 files) ----
-Stm32f10x.h (lib\cmsis\cm3\devicesupport\st\stm32f10x):  *                "#define USE_STDPERIPH_DRIVER"
-Stm32f10x.h (lib\cmsis\cm3\devicesupport\st\stm32f10x):#if !defined  USE_STDPERIPH_DRIVER
-Stm32f10x.h (lib\cmsis\cm3\devicesupport\st\stm32f10x):  #define USE_STDPERIPH_DRIVER/**/
-Stm32f10x.h (lib\cmsis\cm3\devicesupport\st\stm32f10x):#ifdef USE_STDPERIPH_DRIVER
