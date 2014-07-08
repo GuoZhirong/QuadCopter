@@ -24,9 +24,9 @@
 *.bin
 
 #other file and dirctory
-prj/si/*
-prj/si
+controller/prj/si/*
+controller/prj/si
 *.bak
-bin/obj/*
-bin/*
+controller/bin/obj/*
+controller/bin/*
 
