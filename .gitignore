@@ -32,4 +32,5 @@ controller/prj/mdk
 *.bak
 controller/bin/obj/*
 controller/bin/*
+!controller/bin/obj/
 
