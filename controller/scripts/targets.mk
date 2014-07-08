@@ -19,7 +19,7 @@ CC_COMMAND_SILENT="  CC    $@"
 	@$(if $(QUIET), ,echo $(CC_COMMAND$(VERBOSE)) )
 	@$(CC_COMMAND)
 
-LD_COMMAND=$(LD) $(LDFLAGS) $(foreach o,$(OBJ),$(BIN)/$(o)) -lm -o $@
+LD_COMMAND=$(LD) $(LDFLAGS) $(foreach o,$(OBJ),$(BIN)/$(o))  $(GCC_LIB) -lm -o $@
 LD_COMMAND_SILENT="  LD    $@"
 $(PROG).elf: $(OBJ)
 	@$(if $(QUIET), ,echo $(LD_COMMAND$(VERBOSE)) )
