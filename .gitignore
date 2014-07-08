@@ -25,6 +25,7 @@
 
 #other file and dirctory
 prj/si/*
+prj/si
 *.bak
 bin/obj/*
 bin/*

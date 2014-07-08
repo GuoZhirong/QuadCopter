@@ -1,3 +1,0 @@
----- NVIC_SetVectorTable Matches (2 in 2 files) ----
-Misc.c (lib\stm32f10x_stdperiph_driver\src):void NVIC_SetVectorTable(uint32_t NVIC_VectTab, uint32_t Offset)
-Misc.h (lib\stm32f10x_stdperiph_driver\inc):void NVIC_SetVectorTable(uint32_t NVIC_VectTab, uint32_t Offset);
