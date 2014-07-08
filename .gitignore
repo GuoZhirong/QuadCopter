@@ -3,6 +3,8 @@
 *.ko
 *.obj
 *.elf
+*.map
+*.dep
 
 # Libraries
 *.lib
@@ -26,6 +28,7 @@
 #other file and dirctory
 controller/prj/si/*
 controller/prj/si
+controller/prj/mdk
 *.bak
 controller/bin/obj/*
 controller/bin/*
