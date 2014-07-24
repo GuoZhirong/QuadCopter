@@ -145,7 +145,7 @@ void ledBlink2(void *arg)
 		  GPIO_ResetBits(GPIOB, GPIO_Pin_10); 
 		}
 
-		UartSendData(buf, strlen(buf));
+		UartSendData(buf, 14);
 	
 		flag = ~flag;
 		vTaskDelay(M2T(100));

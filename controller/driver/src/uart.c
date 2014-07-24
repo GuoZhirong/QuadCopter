@@ -21,6 +21,7 @@
 #define UART_GPIO_RX    GPIO_Pin_10
 #define UART_DR_BASE	USART3->DR
 
+
 #define DMA_TX_Channel	DMA1_Channel4
 #define DMA_RX_Channel	DMA1_Channel5
 
@@ -44,8 +45,14 @@ DMA_InitTypeDef RxDMAHandle;
 
 void uartDmaTxISR()
 {
+	DMA_ITConfig(DMA_TX_Channel, DMA_IT_TC, DISABLE);
+	DMA_ClearITPendingBit(DMA1_IT_TC4);
+	USART_DMACmd(UART_TYPE, USART_DMAReq_Tx, DISABLE);
+	DMA_Cmd(DMA_TX_Channel, DISABLE);
+  /*
     DMA_Cmd(DMA_TX_Channel, DISABLE);
     DMA_ClearFlag(DMA1_FLAG_TC4);
+    */
 	TxBusy = 0;
 }
 
@@ -86,7 +93,7 @@ static void ConfigureUartDMA(void)
 	TxDMAHandle.DMA_Mode = DMA_Mode_Normal;
 	TxDMAHandle.DMA_Priority = DMA_Priority_VeryHigh;
 	TxDMAHandle.DMA_M2M = DMA_M2M_Disable;
-	DMA_Init(DMA_TX_Channel, &TxDMAHandle);
+	//DMA_Init(DMA_TX_Channel, &TxDMAHandle);
 
 
 	/* DMA1 Channel (triggered by USART2 Rx event) Config */
@@ -95,37 +102,21 @@ static void ConfigureUartDMA(void)
 	RxDMAHandle.DMA_MemoryBaseAddr = (uint32_t)RxFifo;
 	RxDMAHandle.DMA_DIR = DMA_DIR_PeripheralSRC;
 	RxDMAHandle.DMA_BufferSize = RxFifoSize;
-	RxDMAHandle.DMA_Mode = DMA_Mode_Circular;
+	TxDMAHandle.DMA_PeripheralInc = DMA_PeripheralInc_Disable;
+	TxDMAHandle.DMA_MemoryInc = DMA_MemoryInc_Enable;
+	TxDMAHandle.DMA_PeripheralDataSize = DMA_PeripheralDataSize_Byte;
+	TxDMAHandle.DMA_MemoryDataSize = DMA_MemoryDataSize_Byte;
+	TxDMAHandle.DMA_Mode = DMA_Mode_Circular;
+	TxDMAHandle.DMA_Priority = DMA_Priority_VeryHigh;
+	TxDMAHandle.DMA_M2M = DMA_M2M_Disable;
 	DMA_Init(DMA_RX_Channel, &RxDMAHandle);
 
 	/* Enable DMA1_Channel Transfer Complete interrupt */
-	DMA_ITConfig(DMA_TX_Channel, DMA_IT_TC, ENABLE);  
+	//DMA_ITConfig(DMA_TX_Channel, DMA_IT_TC, ENABLE);  
 
 }
 
 
-static void ConfigureUartGPIO(void)
-{
-  GPIO_InitTypeDef GPIO_InitStructure;
-
-	
-  RCC_APB2PeriphClockCmd(UART_GPIO_PERIF, ENABLE);
-  RCC_APB2PeriphClockCmd(UART_PERIF, ENABLE);
-  
-  
-   /* Configure USART_Rx as input floating */
-  GPIO_InitStructure.GPIO_Pin = UART_GPIO_RX;
-  GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN_FLOATING;
-  GPIO_Init(UART_GPIO_PORT, &GPIO_InitStructure);
-  
-  /* Configure USART_Tx as alternate function push-pull */
-  GPIO_InitStructure.GPIO_Pin = UART_GPIO_TX;
-  GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
-  GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF_PP;
-  GPIO_Init(UART_GPIO_PORT, &GPIO_InitStructure);
-
-  
-}
 
 static void ConfigureUartNvic(void)
 {
@@ -142,11 +133,25 @@ static void ConfigureUartNvic(void)
 void InitUART(void)
 {
 	USART_InitTypeDef USART_InitStructure;
+	GPIO_InitTypeDef GPIO_InitStructure;
+	NVIC_InitTypeDef NVIC_InitStructure;
   
-	ConfigureUartGPIO();
-	ConfigureUartDMA();
-	ConfigureUartNvic();
-	
+	RCC_APB2PeriphClockCmd(UART_GPIO_PERIF, ENABLE);
+	RCC_APB2PeriphClockCmd(UART_PERIF, ENABLE);
+
+
+	// Configure USART_Rx as input floating 
+	GPIO_InitStructure.GPIO_Pin = UART_GPIO_RX;
+	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN_FLOATING;
+	GPIO_Init(UART_GPIO_PORT, &GPIO_InitStructure);
+
+	//Configure USART_Tx as alternate function push-pull 
+	GPIO_InitStructure.GPIO_Pin = UART_GPIO_TX;
+	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
+	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF_PP;
+	GPIO_Init(UART_GPIO_PORT, &GPIO_InitStructure);
+
+	//Configure USART
 	USART_DeInit(UART_TYPE);
 	USART_InitStructure.USART_BaudRate = 115200;
 	USART_InitStructure.USART_WordLength = USART_WordLength_8b;
@@ -155,21 +160,51 @@ void InitUART(void)
 	USART_InitStructure.USART_HardwareFlowControl = USART_HardwareFlowControl_None;
 	USART_InitStructure.USART_Mode = USART_Mode_Rx | USART_Mode_Tx;
 	USART_Init(UART_TYPE, &USART_InitStructure);
-	
-	/* Enable USART_Rx DMA Receive request */
-	USART_DMACmd(UART_TYPE, USART_DMAReq_Rx|USART_DMAReq_Tx, ENABLE);
 
-	/* Enable USART_Rx Receive interrupt */
+	//configure tx dma
+	DMA_DeInit(DMA_TX_Channel);  
+	TxDMAHandle.DMA_PeripheralBaseAddr = UART_DR_BASE;
+	TxDMAHandle.DMA_MemoryBaseAddr = (uint32_t)TxBuffer;
+	TxDMAHandle.DMA_DIR = DMA_DIR_PeripheralDST;
+	TxDMAHandle.DMA_BufferSize = 0;
+	TxDMAHandle.DMA_PeripheralInc = DMA_PeripheralInc_Disable;
+	TxDMAHandle.DMA_MemoryInc = DMA_MemoryInc_Enable;
+	TxDMAHandle.DMA_PeripheralDataSize = DMA_PeripheralDataSize_Byte;
+	TxDMAHandle.DMA_MemoryDataSize = DMA_MemoryDataSize_Byte;
+	TxDMAHandle.DMA_Mode = DMA_Mode_Normal;
+	TxDMAHandle.DMA_Priority = DMA_Priority_VeryHigh;
+	TxDMAHandle.DMA_M2M = DMA_M2M_Disable;
+	
+	//uart nvic
+	NVIC_InitStructure.NVIC_IRQChannel = USART3_IRQn;
+	NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 0;
+	NVIC_InitStructure.NVIC_IRQChannelSubPriority = 0;
+	NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
+	NVIC_Init(&NVIC_InitStructure);
+
+	//tx dma nvic
+	NVIC_InitStructure.NVIC_IRQChannel = DMA1_Channel4_IRQn;
+	NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 6;
+	NVIC_InitStructure.NVIC_IRQChannelSubPriority = 0;
+	NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
+	NVIC_Init(&NVIC_InitStructure);
+
+	
+	//Enable USART_Rx DMA Receive request 
+	//USART_DMACmd(UART_TYPE, USART_DMAReq_Rx|USART_DMAReq_Tx, ENABLE);
+
+	// Enable USART_Rx Receive interrupt
 	USART_ITConfig(UART_TYPE, USART_IT_RXNE, ENABLE);
 
 
-	/* Enable DMA1 Channel_Tx */
+	// Enable DMA1 Channel_Tx
 	//DMA_Cmd(DMA_TX_Channel, ENABLE);
-	/* Enable DMA1 Channel6 */
-	DMA_Cmd(DMA_RX_Channel, ENABLE);  
+	// Enable DMA1 Channel6 
+	//DMA_Cmd(DMA_RX_Channel, ENABLE);  
 
-	/* Enable the USART_Tx */
+	// Enable the USART_Tx 
 	USART_Cmd(UART_TYPE, ENABLE);
+	
 }
 
 
