@@ -7,6 +7,8 @@ REV               ?= E
 #OpenOCD conf
 RTOS_DEBUG        ?= 0
 
+####gcc lib######
+GCC_LIB					?= C:/Program\ Files/GNU\ Tools\ ARM\ Embedded/4.8\ 2013q4/arm-none-eabi/lib/libc_s.a
 ############### Location configuration ################
 FREERTOS = lib/FreeRTOS
 PORT = $(FREERTOS)/portable/GCC/ARM_CM3
@@ -32,7 +34,7 @@ FREERTOS_OBJ = list.o tasks.o queue.o timers.o $(MEMMANG_OBJ)
 FREERTOS_OBJ += freeRTOSdebug.o
 VPATH += driver/src main
 
-PROJ_OBJ = main.o
+PROJ_OBJ = main.o usec_time.o nvic.o uart.o
 
 OBJ = $(CRT0) $(ST_OBJ) $(PROJ_OBJ) $(FREERTOS_OBJ) $(PORT_OBJ)
 
@@ -51,7 +53,7 @@ INCLUDES = -I$(FREERTOS)/include -I$(PORT) -I.
 INCLUDES+= -I$(STLIB)/STM32F10x_StdPeriph_Driver/inc
 INCLUDES+= -I$(STLIB)/CMSIS/CM3/CoreSupport
 INCLUDES+= -I$(STLIB)/CMSIS/CM3/DeviceSupport/ST/STM32F10x
-INCLUDES+= -Iconfig -Imain/inc -Idrivers/inc
+INCLUDES+= -Iconfig -Imain/inc -Idriver/inc
 
 PROCESSOR = -mcpu=cortex-m3 -mthumb
 
@@ -67,14 +69,14 @@ endif
 
 CFLAGS += -DBOARD_REV_$(REV)
 
-CFLAGS += $(PROCESSOR) $(INCLUDES) $(STFLAGS) -Wall -fno-strict-aliasing $(C_PROFILE)
+CFLAGS += $(PROCESSOR) $(INCLUDES) $(STFLAGS) -Wall -fno-strict-aliasing $(C_PROFILE) 
 
 
 #Permits to remove un-used functions and global variables from output file
 CFLAGS += -ffunction-sections -fdata-sections
 
 ASFLAGS = $(PROCESSOR) $(INCLUDES)
-LDFLAGS = $(CFLAGS) -Wl,-Map=$(PROG).map,--cref,--gc-sections -nostdlib
+LDFLAGS = $(CFLAGS) -Wl,-Map=$(PROG).map,--cref,--gc-sections -nostdlib  $(GCC_LIB)
 
 LDFLAGS += -T scripts/STM32_Ram20k_Flash32k.ld
 

@@ -1,4 +1,13 @@
 #include "stm32f10x.h"
+#include "FreeRTOSConfig.h"
+#include "FreeRTOS.h"
+#include "task.h"
+#include "nvic.h"
+#include "usec_time.h"
+#include "uart.h"
+
+#include <stdio.h>
+#include <string.h>
 
 
 void delay_ms(uint32_t count)
@@ -65,14 +74,15 @@ void BeepInit(void)
   GPIO_SetBits(GPIOB, GPIO_Pin_7);
 		delay_ms(500);
   GPIO_ResetBits(GPIOB, GPIO_Pin_7);
-  
+  												  
 }
 
 void LedTestLoop(void)
 {
 	char flag = 0;
+	int ii;
 	
-	while(1)
+	for(ii=0; ii<10; ii++)
 	{
 		if (flag)
 		{		
@@ -86,7 +96,7 @@ void LedTestLoop(void)
 		}
 
 		flag = ~flag;
-		delay_ms(100);
+		delay_ms(300);
 	}
 }
 
@@ -98,9 +108,73 @@ void test(void)
 	LedTestLoop();
 }
 
+void ledBlink1(void *arg)
+{
+	char flag = 0;
+	
+	while(1)
+	{
+		if (flag)
+		{		
+		  GPIO_SetBits(GPIOB, GPIO_Pin_0); 
+		}
+		else
+		{			
+		  GPIO_ResetBits(GPIOB, GPIO_Pin_0); 
+		}
+
+		flag = ~flag;
+		vTaskDelay(M2T(500));
+	} 
+}
+
+
+void ledBlink2(void *arg)
+{
+	char flag = 0;
+	char *buf = "this is frame\n";
+	
+	while(1)
+	{
+		if (flag)
+		{		
+		  GPIO_SetBits(GPIOB, GPIO_Pin_10); 
+		}
+		else
+		{			
+		  GPIO_ResetBits(GPIOB, GPIO_Pin_10); 
+		}
+
+		UartSendData(buf, 14);
+	
+		flag = ~flag;
+		vTaskDelay(M2T(100));
+	} 
+}
+
+
+void SystemTaskInit(void)
+{
+	nvicInit();
+	initUsecTimer();
+	systemPowerOn();
+	InitUART();
+	
+	LedInit();
+	LedTestLoop();
+	
+	xTaskCreate(ledBlink1, (const char * const)"LEDBLINK1",
+              2*configMINIMAL_STACK_SIZE, NULL, /*Piority*/2, NULL);
+	xTaskCreate(ledBlink2, (const char * const)"LEDBLINK2",
+              2*configMINIMAL_STACK_SIZE, NULL, /*Piority*/2, NULL);
+
+	vTaskStartScheduler();
+	while(1);
+}
+
 int main(void)
 {
-	test();
+	SystemTaskInit();
 
 	return 0;
 }
